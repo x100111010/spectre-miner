@@ -5,7 +5,7 @@ use crate::{
     Error, ShutdownHandler,
 };
 use log::{info, warn};
-use rand::{thread_rng, RngCore};
+use rand::{rng, RngCore};
 use std::{
     num::Wrapping,
     sync::{
@@ -133,7 +133,7 @@ impl MinerManager {
             Ok(())
         }
 
-        let mut nonce = Wrapping(thread_rng().next_u64());
+        let mut nonce = Wrapping(rng().next_u64());
         std::thread::spawn(move || {
             let mut state = None;
             loop {
@@ -205,7 +205,7 @@ mod benches {
     use self::test::{black_box, Bencher};
     use crate::pow::State;
     use crate::proto::{RpcBlock, RpcBlockHeader};
-    use rand::{thread_rng, RngCore};
+    use rand::{rng, RngCore};
 
     #[bench]
     pub fn bench_mining(bh: &mut Bencher) {
@@ -232,7 +232,7 @@ mod benches {
             },
         )
         .unwrap();
-        state.nonce = thread_rng().next_u64();
+        state.nonce = rng().next_u64();
         bh.iter(|| {
             for _ in 0..100 {
                 black_box(state.check_pow());

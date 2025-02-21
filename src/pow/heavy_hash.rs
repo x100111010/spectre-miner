@@ -324,7 +324,7 @@ mod benches {
     use self::test::{black_box, Bencher};
     use super::{Matrix, XoShiRo256PlusPlus};
     use crate::Hash;
-    use rand::{thread_rng, Rng};
+    use rand::{rng, Rng};
 
     #[bench]
     pub fn bench_compute_rank(bh: &mut Bencher) {
@@ -341,7 +341,7 @@ mod benches {
     #[bench]
     pub fn bench_heavy_hash(bh: &mut Bencher) {
         let mut generator = XoShiRo256PlusPlus::new(Hash::from_le_bytes([42; 32]));
-        let mut input = Hash::new(thread_rng().gen());
+        let mut input = Hash::new(rng().random());
         let mut matrix = Matrix::rand_matrix_no_rank_check(&mut generator);
         bh.iter(|| {
             for _ in 0..10 {
