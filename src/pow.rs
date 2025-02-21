@@ -104,7 +104,7 @@ pub fn serialize_header<H: Hasher>(hasher: &mut H, header: &RpcBlockHeader, for_
         .update(header.blue_score.to_le_bytes());
 
     // I'm assuming here BlueWork will never pass 256 bits.
-    let blue_work_len = (header.blue_work.len() + 1) / 2;
+    let blue_work_len = header.blue_work.len().div_ceil(2);
     if header.blue_work.len() % 2 == 0 {
         decode_to_slice(&header.blue_work, &mut hash[..blue_work_len]).unwrap();
     } else {
@@ -139,7 +139,7 @@ fn decode_to_slice<T: AsRef<[u8]>>(data: T, out: &mut [u8]) -> Result<(), FromHe
     }
 
     for (i, byte) in out.iter_mut().enumerate() {
-        *byte = val(data[2 * i], 2 * i)? << 4 | val(data[2 * i + 1], 2 * i + 1)?;
+        *byte = (val(data[2 * i], 2 * i)? << 4) | val(data[2 * i + 1], 2 * i + 1)?;
     }
 
     #[inline(always)]
