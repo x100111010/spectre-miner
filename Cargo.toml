@@ -22,21 +22,21 @@ include = [
 
 [dependencies]
 tonic = "0.12.3"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 prost = "0.13.5"
 tokio-stream = "0.1"
 num_cpus = "1"
 rand = "0.9.0"
 blake2b_simd = "1.0.0"
-clap = { version = "4.5.30", features = ["derive", "color"] }
+clap = { version = "4.5.32", features = ["derive", "color"] }
 log = "0.4.26"
-env_logger = "0.11.6"
+env_logger = "0.11.7"
 arc-swap = "1.6.0"
 keccak = { version = "0.1", optional = true }
 parking = { package = "parking_lot", version = "0.12", optional = true }
 shuttle = { version = "0.8.0", optional = true }
 chrono = "0.4"
-spectrex = ">=0.3.17"
+spectrex = ">=0.3.19"
 sysinfo = "0.33.1"
 
 [features]
