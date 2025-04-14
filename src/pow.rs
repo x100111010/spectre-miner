@@ -8,6 +8,8 @@ use crate::{
     target::{self, Uint256},
     Error,
 };
+use log::info;
+
 use spectrex::astrobwtv3;
 
 mod hasher;
@@ -46,10 +48,13 @@ impl State {
     #[inline(always)]
     // PRE_POW_HASH || TIME || 32 zero byte padding || NONCE
     pub fn calculate_pow(&self) -> Uint256 {
+        // Get the header version from the block header
+        let header_version = self.block.header.as_ref().map(|header| header.version as u64).unwrap_or(1);
+
         // Hasher already contains PRE_POW_HASH || TIME || 32 zero byte padding; so only the NONCE is missing
         let hash = self.hasher.finalize_with_nonce(self.nonce);
         let bwt_hash = astrobwtv3::astrobwtv3_hash(&hash.to_le_bytes());
-        self.matrix.heavy_hash(Uint256::from_le_bytes(bwt_hash))
+        self.matrix.heavy_hash(Uint256::from_le_bytes(bwt_hash), header_version)
     }
 
     #[inline(always)]
@@ -78,6 +83,11 @@ pub fn serialize_header<H: Hasher>(hasher: &mut H, header: &RpcBlockHeader, for_
     let (nonce, timestamp) = if for_pre_pow { (0, 0) } else { (header.nonce, header.timestamp) };
     let num_parents = header.parents.len();
     let version: u16 = header.version.try_into().unwrap();
+    // info!("Header daa score: {}", header.daa_score);
+    // info!("Header Version: {}", header.version);
+    if version == 2 {
+        info!("Got Header Version 2");
+    }
     hasher.update(version.to_le_bytes()).update((num_parents as u64).to_le_bytes());
 
     let mut hash = [0u8; 32];

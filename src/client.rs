@@ -90,9 +90,11 @@ impl SpectredHandler {
         match msg {
             Payload::NewBlockTemplateNotification(_) => self.client_get_block_template().await?,
             Payload::GetBlockTemplateResponse(template) => match (template.block, template.is_synced, template.error) {
-                (Some(b), true, None) => miner.process_block(Some(b))?,
-                (Some(b), false, None) if self.mine_when_not_synced => miner.process_block(Some(b))?,
-                (_, false, None) => miner.process_block(None)?,
+                (Some(b), true, None) => miner.process_block(Some(b), self.mine_when_not_synced)?,
+                (Some(b), false, None) if self.mine_when_not_synced => {
+                    miner.process_block(Some(b), self.mine_when_not_synced)?
+                }
+                (_, false, None) => miner.process_block(None, self.mine_when_not_synced)?,
                 (_, _, Some(e)) => warn!("GetTemplate returned with an error: {:?}", e),
                 (None, true, None) => error!("No block and No Error!"),
             },
@@ -106,7 +108,7 @@ impl SpectredHandler {
                 }
                 info!("Get block response: {:?}", msg);
             }
-            Payload::GetInfoResponse(info) => info!("Spectred version: {}", info.server_version),
+            Payload::GetInfoResponse(info) => info!("Spectred: {} Synced: {}", info.server_version, info.is_synced),
             Payload::NotifyNewBlockTemplateResponse(res) => match res.error {
                 None => info!("Registered for new template notifications"),
                 Some(e) => error!("Failed registering for new template notifications: {:?}", e),

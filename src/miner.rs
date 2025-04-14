@@ -53,6 +53,7 @@ impl MinerManager {
         n_cpus: Option<u16>,
         throttle: Option<Duration>,
         shutdown: ShutdownHandler,
+        mine_when_not_synced: bool,
     ) -> Self {
         let hashes_tried = Arc::new(AtomicU64::new(0));
         let watch = WatchSwap::empty();
@@ -70,7 +71,7 @@ impl MinerManager {
             handles,
             block_channel: watch,
             send_channel,
-            logger_handle: task::spawn(Self::log_hashrate(Arc::clone(&hashes_tried))),
+            logger_handle: task::spawn(Self::log_hashrate(Arc::clone(&hashes_tried), mine_when_not_synced)),
             is_synced: true,
             hashes_tried,
             current_state_id: AtomicUsize::new(0),
@@ -98,19 +99,23 @@ impl MinerManager {
         })
     }
 
-    pub fn process_block(&mut self, block: Option<RpcBlock>) -> Result<(), Error> {
+    pub fn process_block(&mut self, block: Option<RpcBlock>, mine_when_not_synced: bool) -> Result<(), Error> {
         let state = if let Some(b) = block {
             self.is_synced = true;
             // Relaxed ordering here means there's no promise that the counter will always go up, but the id will always be unique
             let id = self.current_state_id.fetch_add(1, Ordering::Relaxed);
             Some(pow::State::new(id, b)?)
         } else {
-            if !self.is_synced {
+            self.is_synced = false;
+
+            if !mine_when_not_synced {
+                warn!("Spectred is not synced, skipping current template");
+                None
+            } else {
+                // With mine_when_not_synced enabled, keep the previous state
+                // by not changing anything (return None but don't swap it)
                 return Ok(());
             }
-            self.is_synced = false;
-            warn!("Spectred is not synced, skipping current template");
-            None
         };
 
         self.block_channel.swap(state);
@@ -167,7 +172,7 @@ impl MinerManager {
         })
     }
 
-    async fn log_hashrate(hashes_tried: Arc<AtomicU64>) {
+    async fn log_hashrate(hashes_tried: Arc<AtomicU64>, mine_when_not_synced: bool) {
         let mut ticker = tokio::time::interval(LOG_RATE);
         ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
         let mut last_instant = ticker.tick().await;
@@ -175,7 +180,8 @@ impl MinerManager {
             let now = ticker.tick().await;
             let hashes = hashes_tried.swap(0, Ordering::Relaxed);
             let rate = (hashes as f64) / (now - last_instant).as_secs_f64();
-            if hashes == 0 && i % 2 == 0 {
+
+            if hashes == 0 && i % 2 == 0 && !mine_when_not_synced {
                 warn!("Spectred is still not synced");
             } else if hashes != 0 {
                 let (rate, suffix) = Self::hash_suffix(rate);
