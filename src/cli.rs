@@ -17,31 +17,34 @@ pub struct Opt {
     /// The IP of the spectred instance
     pub spectred_address: String,
 
-    #[clap(long = "devfund", display_order = 6)]
+    #[clap(long = "devfund", display_order = 7)]
     /// Mine a percentage of the blocks to the Spectre devfund [default: Off]
     pub devfund_address: Option<String>,
 
-    #[clap(long = "devfund-percent", default_value = "1", display_order = 7, value_parser = parse_devfund_percent)]
+    #[clap(long = "devfund-percent", default_value = "1", display_order = 8, value_parser = parse_devfund_percent)]
     /// The percentage of blocks to send to the devfund
     pub devfund_percent: u16,
 
     #[clap(short, long, display_order = 2)]
-    /// Spectred port [default: Mainnet = 18110, Testnet = 18210]
+    /// Spectred port [default: Mainnet = 18110, Testnet = 18210, Devnet = 18610]
     port: Option<u16>,
 
     #[clap(long, display_order = 4)]
     /// Use testnet instead of mainnet [default: false]
     testnet: bool,
-    #[clap(short = 't', long = "threads", display_order = 5)]
+    #[clap(long, display_order = 5)]
+    /// Use devnet instead of mainnet [default: false]
+    devnet: bool,
+    #[clap(short = 't', long = "threads", display_order = 6)]
     /// Amount of miner threads to launch [default: number of logical cpus]
     pub num_threads: Option<u16>,
-    #[clap(long = "mine-when-not-synced", display_order = 8)]
+    #[clap(long = "mine-when-not-synced", display_order = 9)]
     /// Mine even when spectred says it is not synced, only useful when passing `--allow-submit-block-when-not-synced` to spectred  [default: false]
     pub mine_when_not_synced: bool,
-    #[clap(long = "throttle", display_order = 9)]
+    #[clap(long = "throttle", display_order = 10)]
     /// Throttle (milliseconds) between each pow hash generation (used for development testing)
     pub throttle: Option<u64>,
-    #[clap(long, display_order = 10)]
+    #[clap(long, display_order = 11)]
     /// Output logs in alternative format (same as spectred)
     pub altlogs: bool,
 }
@@ -86,7 +89,13 @@ impl Opt {
     }
 
     fn port(&mut self) -> u16 {
-        *self.port.get_or_insert(if self.testnet { 18210 } else { 18110 })
+        *self.port.get_or_insert(if self.devnet {
+            18610
+        } else if self.testnet {
+            18210
+        } else {
+            18110
+        })
     }
 
     pub fn log_level(&self) -> LevelFilter {
