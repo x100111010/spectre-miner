@@ -119,7 +119,7 @@ impl Matrix {
                 sum1 += self.0[2 * i][j] * u16::from(elem);
                 sum2 += self.0[2 * i + 1][j] * u16::from(elem);
             }
-            if header_version == 2 {
+            if header_version > 1 {
                 (((sum1 & 0xF) ^ ((sum1 >> 4) & 0xF) ^ ((sum1 >> 8) & 0xF)) << 4) as u8
                     | ((sum2 & 0xF) ^ ((sum2 >> 4) & 0xF) ^ ((sum2 >> 8) & 0xF)) as u8
             } else {
