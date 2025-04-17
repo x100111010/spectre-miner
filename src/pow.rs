@@ -8,7 +8,6 @@ use crate::{
     target::{self, Uint256},
     Error,
 };
-use log::info;
 
 use spectrex::astrobwtv3;
 
@@ -85,9 +84,9 @@ pub fn serialize_header<H: Hasher>(hasher: &mut H, header: &RpcBlockHeader, for_
     let version: u16 = header.version.try_into().unwrap();
     // info!("Header daa score: {}", header.daa_score);
     // info!("Header Version: {}", header.version);
-    if version == 2 {
-        info!("Got Header Version 2");
-    }
+    // if version == 2 {
+    //     info!("Got Header Version 2");
+    // }
     hasher.update(version.to_le_bytes()).update((num_parents as u64).to_le_bytes());
 
     let mut hash = [0u8; 32];
