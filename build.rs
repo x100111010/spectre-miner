@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build_server(false)
         // .type_attribute(".", "#[derive(Debug)]")
         .compile_protos(
-            &["proto/rpc.proto", "proto/p2p.proto", "proto/messages.proto"],
+            &["proto/rpc.proto", "proto/messages.proto"],
             &["proto"],
         )?;
     let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();

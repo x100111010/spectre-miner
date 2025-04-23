@@ -1,28 +1,36 @@
 use crate::{
     pow::{self, HeaderHasher},
     proto::{
-        spectred_message::Payload, GetBlockTemplateRequestMessage, GetInfoRequestMessage,
-        NotifyBlockAddedRequestMessage, NotifyNewBlockTemplateRequestMessage, RpcBlock, SpectredMessage,
-        SubmitBlockRequestMessage,
+        spectred_request::Payload, GetBlockTemplateRequestMessage, GetInfoRequestMessage,
+        NotifyBlockAddedRequestMessage, NotifyNewBlockTemplateRequestMessage, RpcBlock, RpcNotifyCommand,
+        SpectredRequest, SubmitBlockRequestMessage,
     },
     Hash,
 };
 
-impl SpectredMessage {
+impl SpectredRequest {
     #[must_use]
     #[inline(always)]
     pub fn get_info_request() -> Self {
-        SpectredMessage { payload: Some(Payload::GetInfoRequest(GetInfoRequestMessage {})) }
+        SpectredRequest { id: 1063, payload: Some(Payload::GetInfoRequest(GetInfoRequestMessage {})) }
     }
+
     #[must_use]
     #[inline(always)]
     pub fn notify_block_added() -> Self {
-        SpectredMessage { payload: Some(Payload::NotifyBlockAddedRequest(NotifyBlockAddedRequestMessage {})) }
+        SpectredRequest {
+            id: 1007,
+            payload: Some(Payload::NotifyBlockAddedRequest(NotifyBlockAddedRequestMessage {
+                command: RpcNotifyCommand::NotifyStart as i32,
+            })),
+        }
     }
+
     #[must_use]
     #[inline(always)]
     pub fn submit_block(block: RpcBlock) -> Self {
-        SpectredMessage {
+        SpectredRequest {
+            id: 1003,
             payload: Some(Payload::SubmitBlockRequest(SubmitBlockRequestMessage {
                 block: Some(block),
                 allow_non_daa_blocks: false,
@@ -31,29 +39,31 @@ impl SpectredMessage {
     }
 }
 
-impl From<GetInfoRequestMessage> for SpectredMessage {
+impl From<GetInfoRequestMessage> for SpectredRequest {
     #[inline(always)]
     fn from(a: GetInfoRequestMessage) -> Self {
-        SpectredMessage { payload: Some(Payload::GetInfoRequest(a)) }
+        SpectredRequest { id: 1063, payload: Some(Payload::GetInfoRequest(a)) }
     }
 }
-impl From<NotifyBlockAddedRequestMessage> for SpectredMessage {
+
+impl From<NotifyBlockAddedRequestMessage> for SpectredRequest {
     #[inline(always)]
     fn from(a: NotifyBlockAddedRequestMessage) -> Self {
-        SpectredMessage { payload: Some(Payload::NotifyBlockAddedRequest(a)) }
+        SpectredRequest { id: 1007, payload: Some(Payload::NotifyBlockAddedRequest(a)) }
     }
 }
 
-impl From<GetBlockTemplateRequestMessage> for SpectredMessage {
+impl From<GetBlockTemplateRequestMessage> for SpectredRequest {
     #[inline(always)]
     fn from(a: GetBlockTemplateRequestMessage) -> Self {
-        SpectredMessage { payload: Some(Payload::GetBlockTemplateRequest(a)) }
+        SpectredRequest { id: 1005, payload: Some(Payload::GetBlockTemplateRequest(a)) }
     }
 }
 
-impl From<NotifyNewBlockTemplateRequestMessage> for SpectredMessage {
+impl From<NotifyNewBlockTemplateRequestMessage> for SpectredRequest {
+    #[inline(always)]
     fn from(a: NotifyNewBlockTemplateRequestMessage) -> Self {
-        SpectredMessage { payload: Some(Payload::NotifyNewBlockTemplateRequest(a)) }
+        SpectredRequest { id: 1081, payload: Some(Payload::NotifyNewBlockTemplateRequest(a)) }
     }
 }
 

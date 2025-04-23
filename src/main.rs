@@ -15,7 +15,7 @@ use std::{
 
 use crate::{
     cli::Opt, client::SpectredHandler, miner::MinerManager, proto::NotifyNewBlockTemplateRequestMessage,
-    target::Uint256,
+    proto::RpcNotifyCommand, target::Uint256,
 };
 
 mod cli;
@@ -102,7 +102,10 @@ async fn main() -> Result<(), Error> {
                         devfund_address
                     );
                 }
-                if let Err(e) = client.client_send(NotifyNewBlockTemplateRequestMessage {}).await {
+                if let Err(e) = client
+                    .client_send(NotifyNewBlockTemplateRequestMessage { command: RpcNotifyCommand::NotifyStart as i32 })
+                    .await
+                {
                     warn!("Error sending block template request: {}", e);
                 }
                 if let Err(e) = client.client_get_block_template().await {

@@ -1,8 +1,8 @@
 use crate::{
     miner::MinerManager,
     proto::{
-        rpc_client::RpcClient, spectred_message::Payload, GetBlockTemplateRequestMessage, GetInfoRequestMessage,
-        SpectredMessage,
+        rpc_client::RpcClient, spectred_response::Payload as ResponsePayload, GetBlockTemplateRequestMessage,
+        GetInfoRequestMessage, SpectredRequest, SpectredResponse,
     },
     Error, ShutdownHandler,
 };
@@ -16,8 +16,8 @@ static EXTRA_DATA: &str = concat!(env!("CARGO_PKG_VERSION"));
 #[allow(dead_code)]
 pub struct SpectredHandler {
     client: RpcClient<TonicChannel>,
-    pub send_channel: Sender<SpectredMessage>,
-    stream: Streaming<SpectredMessage>,
+    pub send_channel: Sender<SpectredRequest>,
+    stream: Streaming<SpectredResponse>,
     miner_address: String,
     mine_when_not_synced: bool,
     devfund_address: Option<String>,
@@ -58,11 +58,11 @@ impl SpectredHandler {
         self.devfund_percent = percent;
     }
 
-    pub async fn client_send(&self, msg: impl Into<SpectredMessage>) -> Result<(), SendError<SpectredMessage>> {
+    pub async fn client_send(&self, msg: impl Into<SpectredRequest>) -> Result<(), SendError<SpectredRequest>> {
         self.send_channel.send(msg.into()).await
     }
 
-    pub async fn client_get_block_template(&mut self) -> Result<(), SendError<SpectredMessage>> {
+    pub async fn client_get_block_template(&mut self) -> Result<(), SendError<SpectredRequest>> {
         let pay_address = match &self.devfund_address {
             Some(devfund_address) if (self.block_template_ctr % 10_000) as u16 <= self.devfund_percent => {
                 devfund_address.clone()
@@ -86,30 +86,34 @@ impl SpectredHandler {
         Ok(())
     }
 
-    async fn handle_message(&mut self, msg: Payload, miner: &mut MinerManager) -> Result<(), Error> {
+    async fn handle_message(&mut self, msg: ResponsePayload, miner: &mut MinerManager) -> Result<(), Error> {
         match msg {
-            Payload::NewBlockTemplateNotification(_) => self.client_get_block_template().await?,
-            Payload::GetBlockTemplateResponse(template) => match (template.block, template.is_synced, template.error) {
-                (Some(b), true, None) => miner.process_block(Some(b), self.mine_when_not_synced)?,
-                (Some(b), false, None) if self.mine_when_not_synced => {
-                    miner.process_block(Some(b), self.mine_when_not_synced)?
+            ResponsePayload::NewBlockTemplateNotification(_) => self.client_get_block_template().await?,
+            ResponsePayload::GetBlockTemplateResponse(template) => {
+                match (template.block, template.is_synced, template.error) {
+                    (Some(b), true, None) => miner.process_block(Some(b), self.mine_when_not_synced)?,
+                    (Some(b), false, None) if self.mine_when_not_synced => {
+                        miner.process_block(Some(b), self.mine_when_not_synced)?
+                    }
+                    (_, false, None) => miner.process_block(None, self.mine_when_not_synced)?,
+                    (_, _, Some(e)) => warn!("GetTemplate returned with an error: {:?}", e),
+                    (None, true, None) => error!("No block and No Error!"),
                 }
-                (_, false, None) => miner.process_block(None, self.mine_when_not_synced)?,
-                (_, _, Some(e)) => warn!("GetTemplate returned with an error: {:?}", e),
-                (None, true, None) => error!("No block and No Error!"),
-            },
-            Payload::SubmitBlockResponse(res) => match res.error {
+            }
+            ResponsePayload::SubmitBlockResponse(res) => match res.error {
                 None => info!("Block submitted successfully!"),
                 Some(e) => warn!("Failed submitting block: {:?}", e),
             },
-            Payload::GetBlockResponse(msg) => {
+            ResponsePayload::GetBlockResponse(msg) => {
                 if let Some(e) = msg.error {
                     return Err(e.message.into());
                 }
                 info!("Get block response: {:?}", msg);
             }
-            Payload::GetInfoResponse(info) => info!("Spectred: {} Synced: {}", info.server_version, info.is_synced),
-            Payload::NotifyNewBlockTemplateResponse(res) => match res.error {
+            ResponsePayload::GetInfoResponse(info) => {
+                info!("Spectred: {} Synced: {}", info.server_version, info.is_synced)
+            }
+            ResponsePayload::NotifyNewBlockTemplateResponse(res) => match res.error {
                 None => info!("Registered for new template notifications"),
                 Some(e) => error!("Failed registering for new template notifications: {:?}", e),
             },
