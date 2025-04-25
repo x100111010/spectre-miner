@@ -13,7 +13,7 @@ algorithm.
 
 ### Install from Binaries
 
-Pre-compiled binaries for Linux `x86_64`, Windows `x64` and macOS `x64`
+Pre-compiled binaries for Linux (`x86_64` GNU, `x86_64` MUSL, `aarch64`), Android (`aarch64`), Windows (`x64`) and macOS `x64`
 and `aarch64` can be downloaded from the [GitHub release](https://github.com/spectre-project/spectre-miner/releases)
 page.
 
@@ -32,9 +32,7 @@ cargo build --release
 
 To start mining you need to run a Spectre full node. It is highly
 recommended to run the [Spectre on Rust](https://github.com/spectre-project/rusty-spectre)
-version. As a fallback, deprecated and legacy option, the
-[Spectre Golang Node](https://github.com/spectre-project/spectred)
-is supported as well. You need to have an address to send the mining
+version. You need to have an address to send the mining
 rewards to. Running `spectre-miner -h` will show all available command
 line options:
 
@@ -49,11 +47,13 @@ Options:
   -s, --spectred-address <SPECTRED_ADDRESS>
           The IP of the spectred instance [default: 127.0.0.1]
   -p, --port <PORT>
-          Spectred port [default: Mainnet = 18110, Testnet = 18210]
+          Spectred port [default: Mainnet = 18110, Testnet = 18210, Devnet = 18610]
   -d, --debug
           Enable debug logging level
       --testnet
           Use testnet instead of mainnet [default: false]
+      --devnet
+          Use devnet instead of mainnet [default: false]
   -t, --threads <NUM_THREADS>
           Amount of miner threads to launch [default: number of logical cpus]
       --devfund <DEVFUND_ADDRESS>
