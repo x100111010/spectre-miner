@@ -61,7 +61,7 @@ Options:
       --devfund-percent <DEVFUND_PERCENT>
           The percentage of blocks to send to the devfund [default: 1]
       --mine-when-not-synced
-          Mine even when spectred says it is not synced, only useful when passing `--allow-submit-block-when-not-synced` to spectred  [default: false]
+          Mine even when spectred says it is not synced, only useful when passing `--enable-unsynced-mining` to spectred  [default: false]
       --throttle <THROTTLE>
           Throttle (milliseconds) between each pow hash generation (used for development testing)
       --altlogs
