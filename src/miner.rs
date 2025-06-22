@@ -132,9 +132,10 @@ impl MinerManager {
         // We mark it cold as the function is not called often, and it's not in the hot path
         #[cold]
         fn found_block(send_channel: &Sender<SpectredRequest>, block: RpcBlock) -> Result<(), Error> {
+            let header_version = block.header.as_ref().unwrap().version;
             let block_hash = block.block_hash().expect("We just got it from the state, we should be able to hash it");
             send_channel.blocking_send(SpectredRequest::submit_block(block))?;
-            info!("Found a block: {:x}", block_hash);
+            info!("Found a block: {:x} Version: {}", block_hash, header_version);
             Ok(())
         }
 

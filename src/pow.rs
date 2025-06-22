@@ -26,12 +26,14 @@ pub struct State {
     block: RpcBlock,
     // PRE_POW_HASH || TIME || 32 zero byte padding; without NONCE
     hasher: PowHasher,
+    header_version: u32, // why is this u32
 }
 
 impl State {
     #[inline]
     pub fn new(id: usize, block: RpcBlock) -> Result<Self, Error> {
         let header = &block.header.as_ref().ok_or("Header is missing")?;
+        let header_version = header.version;
 
         let target = target::u256_from_compact_target(header.bits);
         let mut hasher = HeaderHasher::new();
@@ -41,24 +43,41 @@ impl State {
         let hasher = PowHasher::new(pre_pow_hash, header.timestamp as u64);
         let matrix = Matrix::generate(pre_pow_hash);
 
-        Ok(Self { id, matrix, nonce: 0, target, block, hasher })
+        Ok(Self { id, matrix, nonce: 0, target, block, hasher, header_version })
     }
 
     #[inline(always)]
-    // PRE_POW_HASH || TIME || 32 zero byte padding || NONCE
-    pub fn calculate_pow(&self) -> Uint256 {
-        // Get the header version from the block header
-        let header_version = self.block.header.as_ref().map(|header| header.version as u64).unwrap_or(1);
-
+    /// PRE_POW_HASH || TIME || 32 zero byte padding || NONCE
+    pub fn calculate_spectrex_v1(&self) -> Uint256 {
         // Hasher already contains PRE_POW_HASH || TIME || 32 zero byte padding; so only the NONCE is missing
         let hash = self.hasher.finalize_with_nonce(self.nonce);
         let bwt_hash = astrobwtv3::astrobwtv3_hash(&hash.to_le_bytes());
-        self.matrix.heavy_hash(Uint256::from_le_bytes(bwt_hash), header_version)
+        self.matrix.heavy_hash(Uint256::from_le_bytes(bwt_hash))
+    }
+
+    #[inline(always)]
+    /// PRE_POW_HASH || TIME || 32 zero byte padding || NONCE
+    pub fn calculate_spectrex_v2(&self) -> Uint256 {
+        // Hasher already contains PRE_POW_HASH || TIME || 32 zero byte padding; so only the NONCE is missing
+        let hash = self.hasher.finalize_with_nonce(self.nonce);
+        let bwt_hash = astrobwtv3::astrobwtv3_hash(&hash.to_le_bytes());
+        self.matrix.heavy_hash_v2(Uint256::from_le_bytes(bwt_hash))
+    }
+
+    #[inline(always)]
+    /// PRE_POW_HASH || TIME || 32 zero byte padding || NONCE
+    pub fn calculate_pow(&self) -> Uint256 {
+        match self.header_version {
+            1 => self.calculate_spectrex_v1(),
+            2 => self.calculate_spectrex_v2(),
+            _ => unreachable!("wrong header version: {}", self.header_version),
+        }
     }
 
     #[inline(always)]
     pub fn check_pow(&self) -> bool {
         let pow = self.calculate_pow();
+        // println!("nonce: {}, pow.bits(): {}, zeros {}, passed: {}", nonce, pow.bits(), (256 - pow.bits()), pow <= self.target);
         // The pow hash must be less or equal than the claimed target.
         pow <= self.target
     }
@@ -82,11 +101,6 @@ pub fn serialize_header<H: Hasher>(hasher: &mut H, header: &RpcBlockHeader, for_
     let (nonce, timestamp) = if for_pre_pow { (0, 0) } else { (header.nonce, header.timestamp) };
     let num_parents = header.parents.len();
     let version: u16 = header.version.try_into().unwrap();
-    // info!("Header daa score: {}", header.daa_score);
-    // info!("Header Version: {}", header.version);
-    // if version == 2 {
-    //     info!("Got Header Version 2");
-    // }
     hasher.update(version.to_le_bytes()).update((num_parents as u64).to_le_bytes());
 
     let mut hash = [0u8; 32];
