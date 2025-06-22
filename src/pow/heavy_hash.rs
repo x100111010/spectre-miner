@@ -100,7 +100,7 @@ impl Matrix {
         rank
     }
 
-    pub fn heavy_hash(&self, hash: Hash, header_version: u64) -> Hash {
+    pub fn heavy_hash(&self, hash: Hash) -> Hash {
         let hash = hash.to_le_bytes();
         // SAFETY: An uninitialized MaybrUninit is always safe.
         let mut vec: [MaybeUninit<u8>; 64] = unsafe { MaybeUninit::uninit().assume_init() };
@@ -119,12 +119,7 @@ impl Matrix {
                 sum1 += self.0[2 * i][j] * u16::from(elem);
                 sum2 += self.0[2 * i + 1][j] * u16::from(elem);
             }
-            if header_version > 1 {
-                (((sum1 & 0xF) ^ ((sum1 >> 4) & 0xF) ^ ((sum1 >> 8) & 0xF)) << 4) as u8
-                    | ((sum2 & 0xF) ^ ((sum2 >> 4) & 0xF) ^ ((sum2 >> 8) & 0xF)) as u8
-            } else {
-                ((sum1 >> 10) << 4) as u8 | (sum2 >> 10) as u8
-            }
+            ((sum1 >> 10) << 4) as u8 | (sum2 >> 10) as u8
         });
 
         // Concatenate 4 LSBs back to 8 bit xor with sum1
@@ -245,7 +240,7 @@ mod tests {
             82, 46, 212, 218, 28, 192, 143, 92, 213, 66, 86, 63, 245, 241, 155, 189, 73, 159, 229, 180, 202, 105, 159,
             166, 109, 172, 128, 136, 169, 195, 97, 41,
         ]);
-        assert_eq!(test_matrix.heavy_hash(hash, 1), expected_hash);
+        assert_eq!(test_matrix.heavy_hash(hash), expected_hash);
     }
     #[test]
     fn test_generate_matrix() {
