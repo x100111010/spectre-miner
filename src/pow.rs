@@ -26,7 +26,7 @@ pub struct State {
     block: RpcBlock,
     // PRE_POW_HASH || TIME || 32 zero byte padding; without NONCE
     hasher: PowHasher,
-    header_version: u32, // why is this u32
+    header_version: u32,
 }
 
 impl State {
