@@ -58,3 +58,6 @@ cc = "1.2.19"
 
 [dev-dependencies]
 sha3 = "0.10"
+
+[lints.clippy]
+uninlined_format_args = "allow"
